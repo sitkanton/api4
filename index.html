@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Работа с файлами и устройствами</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .upload-area, .drop-area {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #ccc;
+            text-align: center;
+            line-height: 200px;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        #imageDisplay {
+            max-width: 100%;
+            height: auto;
+        }
+        #locationOutput {
+            margin-top: 10px;
+        }
+        #cameraOutput {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div>
+        <h3>Загрузить файл (изображение)</h3>
+        <input type="file" id="fileInput" />
+        <div id="fileOutput"></div>
+    </div>
+
+
+    <div>
+        <h3>Перетащите файл</h3>
+        <div class="drop-area" id="dropArea">Перетащите файл сюда</div>
+        <div id="dragFileOutput"></div>
+    </div>
+
+    
+    <div>
+        <h3>Ваше местоположение</h3>
+        <button id="getLocationBtn">Получить местоположение</button>
+        <div id="locationOutput"></div>
+    </div>
+
+
+    <div>
+        <h3>Использование веб-камеры</h3>
+        <button id="startCameraBtn">Начать съемку</button>
+        <video id="cameraOutput" width="300" height="200" autoplay></video>
+        <button id="capturePhotoBtn">Сделать фото</button>
+        <canvas id="canvasOutput" style="display:none;"></canvas>
+    </div>
+</div>
+
+<script>
+  
+    const fileInput = document.getElementById('fileInput');
+    const fileOutput = document.getElementById('fileOutput');
+
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.id = 'imageDisplay';
+                fileOutput.innerHTML = '';
+                fileOutput.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            fileOutput.innerHTML = 'Нет выбранных файлов.';
+        }
+    });
+
+    const dropArea = document.getElementById('dropArea');
+    const dragFileOutput = document.getElementById('dragFileOutput');
+
+    dropArea.addEventListener('dragover', function(event) {
+        event.preventDefault();
+        dropArea.style.backgroundColor = '#f0f0f0';
+    });
+
+    dropArea.addEventListener('dragleave', function() {
+        dropArea.style.backgroundColor = '';
+    });
+
+    dropArea.addEventListener('drop', function(event) {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.id = 'imageDisplay';
+                dragFileOutput.innerHTML = '';
+                dragFileOutput.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            dragFileOutput.innerHTML = 'Нет выбранных файлов.';
+        }
+        dropArea.style.backgroundColor = '';
+    });
+
+
+    const getLocationBtn = document.getElementById('getLocationBtn');
+    const locationOutput = document.getElementById('locationOutput');
+    getLocationBtn.addEventListener('click', function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                locationOutput.innerHTML = `Широта: ${latitude}, Долгота: ${longitude}`;
+            }, function(error) {
+                locationOutput.innerHTML = `Ошибка: ${error.message}`;
+            });
+        } else {
+            locationOutput.innerHTML = 'Геолокация не поддерживается этим браузером.';
+        }
+    });
+
+  
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+    const cameraOutput = document.getElementById('cameraOutput');
+    const canvasOutput = document.getElementById('canvasOutput');
+
+    let videoStream;
+
+    startCameraBtn.addEventListener('click', function() {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                videoStream = stream;
+                cameraOutput.srcObject = stream;
+            })
+            .catch(function(error) {
+                alert('Ошибка при доступе к камере: ' + error.message);
+            });
+    });
+
+    capturePhotoBtn.addEventListener('click', function() {
+        if (videoStream) {
+            const context = canvasOutput.getContext('2d');
+            canvasOutput.width = cameraOutput.videoWidth;
+            canvasOutput.height = cameraOutput.videoHeight;
+            context.drawImage(cameraOutput, 0, 0, canvasOutput.width, canvasOutput.height);
+
+            const imageUrl = canvasOutput.toDataURL();
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            cameraOutput.parentElement.appendChild(img);
+        }
+    });
+
+</script>
+
+</body>
+</html>
